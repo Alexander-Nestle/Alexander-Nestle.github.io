@@ -37,6 +37,15 @@
                 z-index: 1;
             }
 
+            .annotationText {
+                opacity: 0;
+                position: absolute;
+                background-color: white;
+                border: 1px solid black;
+                padding: 4px;
+                z-index: 1;
+            }
+
             .legend rect {
                 fill:white;
                 stroke:black;
@@ -57,6 +66,8 @@
     <body onload='init()' style="background-color: #F9F9F9">
         <h2 style="margin-left: 10px">Voter Turnout for U.S. General Elections vs Midterm Elections</h2>
         <div id="tooltip" ></div>
+        <div id="leftAnnotation" class="annotationText"></div>
+        <div id="rightAnnotation" class="annotationText"></div>
         <div id="selection"></div>
     </body>
     <script>
@@ -79,30 +90,29 @@
         var annotationId = 'annotation';
         var us_line_1988 = [
             {x: xScale(1988) + chartMargin.left + 25,y:  yScale(91594809 / 173579281) + chartMargin.top},
-            {x: xScale(1988) + chartMargin.left + 25,y:  chartHeight / 3},
-            {x: chartWidth / 2.75,y:  chartHeight / 3}
+            {x: xScale(1988) + chartMargin.left + 25,y:  chartHeight / 3}
         ]
 
         var us_line_1990 = [
             {x: xScale(1990) + chartMargin.left + 25,y:  yScale(87078225 / 176629259) + chartMargin.top},
-            {x: xScale(1990) + chartMargin.left + 25,y:  chartHeight / 3},
+            {x: xScale(1990) + chartMargin.left + 25,y:  chartHeight / 3}
         ]
 
         var us_line_2014 = [
             {x: xScale(2014) + chartMargin.left + 25,y:  yScale(83262122 / 227157964) + chartMargin.top},
-            {x: xScale(2014) + chartMargin.left + 25,y:  chartHeight / 3},
+            {x: xScale(2014) + chartMargin.left + 25,y:  chartHeight / 3.75},
         ]
 
         var us_line_2016 = [
             {x: xScale(2016) + chartMargin.left + 25,y:  yScale(138846571 / 230931921) + chartMargin.top},
-            {x: xScale(2016) + chartMargin.left + 25,y:  chartHeight / 3},
-            {x: chartWidth / 2.75,y:  chartHeight / 3}
+            {x: xScale(2016) + chartMargin.left + 25,y:  chartHeight / 3.75},
+            {x: chartWidth / 1.25,y:  chartHeight / 3.75}
         ]
 
         var northeast_line_1980 = [
             {x: xScale(1980) + chartMargin.left + 25,y:  yScale(14390571 / 25140720) + chartMargin.top},
             {x: xScale(1980) + chartMargin.left + 25,y:  chartHeight / 3},
-            {x: chartWidth / 2.75,y:  chartHeight / 3}
+            {x: chartMargin.left + 55,y:  chartHeight / 3}
         ]
 
         var northeast_line_1982 = [
@@ -112,13 +122,13 @@
 
         var northeast_line_2014 = [
             {x: xScale(2014) + chartMargin.left + 25,y:  yScale(14348491 / 40080240) + chartMargin.top},
-            {x: xScale(2014) + chartMargin.left + 25,y:  chartHeight / 3},
+            {x: xScale(2014) + chartMargin.left + 25,y:  chartHeight / 3.75},
         ]
 
         var northeast_line_2016 = [
             {x: xScale(2016) + chartMargin.left + 25,y:  yScale(25282216 / 40233477) + chartMargin.top},
-            {x: xScale(2016) + chartMargin.left + 25,y:  chartHeight / 3},
-            {x: chartWidth / 2.75,y:  chartHeight / 3}
+            {x: xScale(2016) + chartMargin.left + 25,y:  chartHeight / 3.75},
+            {x: chartWidth / 1.15,y:  chartHeight / 3.75}
         ]
 
         color_palette = [
@@ -176,12 +186,13 @@
             plotAnnotationLine(us_line_1990, "USLine1990");
             plotAnnotationLine(us_line_2014, "USLine2014");
             plotAnnotationLine(us_line_2016, "USLine2016");
-            plotAnnotationText("<p>The 4% difference between the 1988 general election<br />\
-                 and the 1990 midterm election grew to 23% between the 2014<br />\
-                 midterm and 2016 general election.</p>");
+            plotLeftAnnotationText("<p>There was a 4% voter turnout difference between<br />\
+             the 1988 general and the 1990 midterm elections</p>");
+            plotRightAnnotationText("<p>This difference grew to 23% between the 2014<br />\
+                 midterm and 2016 general elections.</p>");
             setTimeout( () => {
                 d3.selectAll("." + annotationId).remove();
-                d3.select("#tooltip").style("opacity", 0).style("left", "0px").style("top", "0px")
+                d3.selectAll(".annotationText").style("opacity", 0).style("left", "0px").style("top", "0px")
                 removeLine("United States");
                 plot(svg, 52, "#7FBA00", 'West1', 'West2', null, null);
                 plot(svg, 53, "#00A4EF", 'South1', 'South2');
@@ -191,15 +202,16 @@
                 plotAnnotationLine(northeast_line_1982, "NELine1982");
                 plotAnnotationLine(northeast_line_2014, "NELine2014");
                 plotAnnotationLine(northeast_line_2016, "NELine2016");
-                plotAnnotationText("<p>Midterm voter turnout has fallen 10% in the Northeast region between 1982 and 2014.  <br />\
-                This resulted in a 27% difference in participation between the 2016 general <br />\
-                and 2014 midterm elections in the Northeast United States.</p>");
+                plotLeftAnnotationText("<p>The Northeast region only had a 11% voter turnout <br/>\
+                difference between the 1980 general and 1982 midterm elections.</p>");
+                plotRightAnnotationText("<p>The difference has grown to 27% between the 2014 midterm <br />\
+                 and 2016 general elections as midterm participation had fallen 10%.</p>");
             }
                 ,9500);
 
             setTimeout( () => {
                 d3.selectAll("." + annotationId).remove();
-                d3.select("#tooltip").style("opacity", 0).style("left", "0px").style("top", "0px")
+                d3.selectAll(".annotationText").style("opacity", 0).style("left", "0px").style("top", "0px")
                 removeLine("West");
                 removeLine("South");
                 removeLine("Midwest");
@@ -259,6 +271,30 @@
             tooltip.style("opacity", 0)
                 .style("left", chartWidth / 2.75 + "px")
                 .style("top", chartHeight / 3 + "px")
+                .html(htmlText)
+                 .transition()
+                 .style("opacity", 1)
+                 .delay(2000)
+                 .duration(500);
+        }
+
+        function plotLeftAnnotationText(htmlText) {
+            var tooltip = d3.select("#leftAnnotation");
+            tooltip.style("opacity", 0)
+                .style("left", chartMargin.left + 55 + "px")
+                .style("top", chartHeight / 2.50 + "px")
+                .html(htmlText)
+                 .transition()
+                 .style("opacity", 1)
+                 .delay(2000)
+                 .duration(500);
+        }
+
+        function plotRightAnnotationText(htmlText) {
+            var tooltip = d3.select("#rightAnnotation");
+            tooltip.style("opacity", 0)
+                .style("left", chartWidth / 1.65 + "px")
+                .style("top", chartHeight / 3.75 + "px")
                 .html(htmlText)
                  .transition()
                  .style("opacity", 1)
