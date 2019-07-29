@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script src="https://d3js.org/d3.v5.min.js"></script>
+        <!-- <script src='./d3/d3.js'></script> -->
+        <style type="text/css">
+
+            h1 h2 h3 h4 h5 {
+                font-family: "Calibri", "Cambria", "Times New Roman";
+            }
+
+            label {
+                padding: 2px
+            }
+
+            .line {
+                fill: none;
+                stroke-width: 3;
+            }
+
+            .annotationline {
+                fill: none;
+                stroke-width: 2;
+            }
+
+            .dot {
+                fill: #000000;
+                stroke: #fff;
+            }
+
+            #tooltip {
+                opacity: 0;
+                position: absolute;
+                background-color: white;
+                border: 1px solid black;
+                padding: 4px;
+                z-index: 1;
+            }
+
+            .legend rect {
+                fill:white;
+                stroke:black;
+                opacity:0.8;
+            }
+
+            #selection {
+                float: right;
+                display: inline-grid;
+                padding: 10px;
+                border: 1px solid black;
+                height: 700px;
+                overflow: auto;
+                opacity: 0;
+            }
+        </style>
+    </head>
+    <body onload='init()' style="background-color: #F9F9F9">
+        <h2 style="margin-left: 10px">Voter Turnout for U.S. General Elections vs Midterm Elections</h2>
+        <div id="tooltip" ></div>
+        <div id="selection"></div>
+    </body>
+    <script>
+        var data;
+        var chartMargin = {top: 50, right: 50, bottom: 50, left: 50};
+        var chartWidth = window.innerWidth - chartMargin.left - chartMargin.right - 275
+        var chartHeight = window.innerHeight - chartMargin.top - chartMargin.bottom - 175;
+        var legendX = 130
+        var legendWidth = 100;
+        var radius = 5;
+
+        var years = [1980, 1982, 1984, 1986, 1988, 1990, 1992, 1994, 1996, 1998, 2000, 2002, 2004, 2006, 2008, 2010, 2012, 2014, 2016]
+        var generalYears = [1980, 1984, 1988, 1992, 1996, 2000, 2004, 2008, 2012, 2016];
+        var midtermYears = [1982, 1986, 1990, 1994, 1998, 2002, 2006, 2010, 2014];
+        var xScale = d3.scaleBand().domain(years).range([0, chartWidth]);
+        var yScale = d3.scaleLinear().domain([0, 1]).range([chartHeight, 0]);
+        var legendNumber = 0;
+        var legendSet = [];
+
+        var annotationId = 'annotation';
+        var us_line_1988 = [
+            {x: xScale(1988) + chartMargin.left + 25,y:  yScale(91594809 / 173579281) + chartMargin.top},
+            {x: xScale(1988) + chartMargin.left + 25,y:  chartHeight / 3},
+            {x: chartWidth / 2.75,y:  chartHeight / 3}
+        ]
+
+        var us_line_1990 = [
+            {x: xScale(1990) + chartMargin.left + 25,y:  yScale(87078225 / 176629259) + chartMargin.top},
+            {x: xScale(1990) + chartMargin.left + 25,y:  chartHeight / 3},
+        ]
+
+        var us_line_2014 = [
+            {x: xScale(2014) + chartMargin.left + 25,y:  yScale(83262122 / 227157964) + chartMargin.top},
+            {x: xScale(2014) + chartMargin.left + 25,y:  chartHeight / 3},
+        ]
+
+        var us_line_2016 = [
+            {x: xScale(2016) + chartMargin.left + 25,y:  yScale(138846571 / 230931921) + chartMargin.top},
+            {x: xScale(2016) + chartMargin.left + 25,y:  chartHeight / 3},
+            {x: chartWidth / 2.75,y:  chartHeight / 3}
+        ]
+
+        var northeast_line_1980 = [
+            {x: xScale(1980) + chartMargin.left + 25,y:  yScale(14390571 / 25140720) + chartMargin.top},
+            {x: xScale(1980) + chartMargin.left + 25,y:  chartHeight / 3},
+            {x: chartWidth / 2.75,y:  chartHeight / 3}
+        ]
+
+        var northeast_line_1982 = [
+            {x: xScale(1982) + chartMargin.left + 25,y:  yScale(11772569 / 25525114) + chartMargin.top},
+            {x: xScale(1982) + chartMargin.left + 25,y:  chartHeight / 3},
+        ]
+
+        var northeast_line_2014 = [
+            {x: xScale(2014) + chartMargin.left + 25,y:  yScale(14348491 / 40080240) + chartMargin.top},
+            {x: xScale(2014) + chartMargin.left + 25,y:  chartHeight / 3},
+        ]
+
+        var northeast_line_2016 = [
+            {x: xScale(2016) + chartMargin.left + 25,y:  yScale(25282216 / 40233477) + chartMargin.top},
+            {x: xScale(2016) + chartMargin.left + 25,y:  chartHeight / 3},
+            {x: chartWidth / 2.75,y:  chartHeight / 3}
+        ]
+
+        color_palette = [
+                "#11144C",
+                "#3A9679",
+                "#df0e62",
+                "#6900ff",
+                "#f090d9",
+                "#F25022",
+                "#7FBA00",
+                "#00A4EF",
+                "#FFB900",
+                "#737373"
+        ]
+
+        assigned_colors = {
+                0: "#F25022",
+                52: "#7FBA00",
+                53: "#00A4EF",
+                54: "#FFB900",
+                55: "#737373"
+        }
+
+        async function init() {
+            data = await d3.csv('./voter_turnout.csv');
+            var svg = d3.select("body").append("svg")
+                .attr("width", chartWidth + chartMargin.left + chartMargin.right + legendWidth + 50)
+                .attr("height", 1200)
+                .attr("overflow", "auto")
+                .style('position', 'absolute')
+                .append("g")
+                    .attr("transform", "translate(" + (chartMargin.left + 25) + "," + chartMargin.top + ")");
+
+            d3.select('svg').append("g")
+                .attr('transform', 'translate('+chartMargin.left+','+chartMargin.top+')')
+                .call(d3.axisLeft(yScale))
+
+            svg.append("text")
+                .attr("transform", "rotate(-90)")
+                .attr("x", -100)
+                .attr("y", 6)
+                .text("Voter Turnout %")
+
+            svg.append("text")
+                .attr("x", chartWidth - 55)
+                .attr("y", chartHeight - 10)
+                .text("Year")
+
+            d3.select('svg').append("g")
+                .attr('transform', 'translate('+chartMargin.left+','+(chartHeight + chartMargin.top)+')')
+                .call(d3.axisBottom(xScale)); 
+
+            plot(svg, 0, "#F25022", 'first', 'second', null, null);
+            plotAnnotationLine(us_line_1988, "USLine1988");
+            plotAnnotationLine(us_line_1990, "USLine1990");
+            plotAnnotationLine(us_line_2014, "USLine2014");
+            plotAnnotationLine(us_line_2016, "USLine2016");
+            plotAnnotationText("<p>The 4% difference between the 1988 general election<br />\
+                 and the 1990 midterm election grew to 23% between the 2014<br />\
+                 midterm and 2016 general election.</p>");
+            setTimeout( () => {
+                d3.selectAll("." + annotationId).remove();
+                d3.select("#tooltip").style("opacity", 0).style("left", "0px").style("top", "0px")
+                removeLine("United States");
+                plot(svg, 52, "#7FBA00", 'West1', 'West2', null, null);
+                plot(svg, 53, "#00A4EF", 'South1', 'South2');
+                plot(svg, 54, "#FFB900", 'Midwest1', 'Midwest2');
+                plot(svg, 55, "#737373", 'Northeast1', 'Northeast2');
+                plotAnnotationLine(northeast_line_1980, "NELine1980");
+                plotAnnotationLine(northeast_line_1982, "NELine1982");
+                plotAnnotationLine(northeast_line_2014, "NELine2014");
+                plotAnnotationLine(northeast_line_2016, "NELine2016");
+                plotAnnotationText("<p>Midterm voter turnout has fallen 10% in the Northeast region between 1982 and 2014.  <br />\
+                This resulted in a 27% difference in participation between the 2016 general <br />\
+                and 2014 midterm elections in the Northeast United States.</p>");
+            }
+                ,9500);
+
+            setTimeout( () => {
+                d3.selectAll("." + annotationId).remove();
+                d3.select("#tooltip").style("opacity", 0).style("left", "0px").style("top", "0px")
+                removeLine("West");
+                removeLine("South");
+                removeLine("Midwest");
+                removeLine("Northeast");
+                plotAnnotationText("<p>Select states or regions on the right and hover over <br/>\
+                    the data points to futher explore election data.</p>");
+                d3.select("#selection").style("opacity", 1);
+                renderSelectionParams();
+            }
+                ,22000);
+        }
+        
+        function plot(svg, stateID, color, generalplotId, midtermplotId, handleMouseOver, handleMouseOut) {
+            var general_set = data.filter(function(d){return (
+                d.alphanumeric_state_code == stateID.toString() && 
+                generalYears.includes(parseInt(d.year)) &&
+                d.votes !== 'NA');});
+            var midterm_set = data.filter(function(d){return (
+                d.alphanumeric_state_code == stateID.toString() && 
+                midtermYears.includes(parseInt(d.year)) &&
+                d.votes !== 'NA');});
+            plotLine(svg, general_set, color, generalplotId, general_set[0].state);
+            plotLine(svg, midterm_set, color, midtermplotId, midterm_set[0].state);
+            plotDot(svg, midterm_set,  midterm_set[0].state, handleMouseOver, handleMouseOut);
+            plotDot(svg, general_set, general_set[0].state, handleMouseOver, handleMouseOut);
+            renderLegend(general_set);
+        }
+
+        function plotAnnotationLine(dataSet, id) {
+            var svg = d3.select('svg');
+
+            var lineFunction = d3.line()
+                .x(function(d) { return d.x; })
+                .y(function(d) { return d.y; })
+
+            var path = svg.append("path")
+                .datum(dataSet)
+                .attr("class", "annotationline " + annotationId)
+                .attr("d", lineFunction)
+                .attr("id", id)
+                .style('stroke', '#89cff0');
+                
+            var length = path.node().getTotalLength();
+
+            d3.select('#' + id)
+                .attr("stroke-dasharray", length + " " + length )
+                .attr("stroke-dashoffset", length)
+                .transition()
+                    .delay(1000)
+                    .duration(1000)
+                    .ease(d3.easeCubic)
+                    .attr("stroke-dashoffset", 0);
+        }
+
+        function plotAnnotationText(htmlText) {
+            var tooltip = d3.select("#tooltip");
+            tooltip.style("opacity", 0)
+                .style("left", chartWidth / 2.75 + "px")
+                .style("top", chartHeight / 3 + "px")
+                .html(htmlText)
+                 .transition()
+                 .style("opacity", 1)
+                 .delay(2000)
+                 .duration(500);
+        }
+
+        function plotLine(svg, dataSet, color, id, state) {
+            state = state.replace(/\s+/g, '');
+            id = id.replace(/\s+/g, '');
+            var line = d3.line()
+                .x(function(d) { return xScale(d.year); }) 
+                .y(function(d) { return yScale(d.votes / d.eligible_voters); });
+
+            var path = svg.append("path")
+                .datum(dataSet)
+                .attr("class", "line " + state)
+                .attr("d", line)
+                .attr("id",  id)
+                .style('stroke', color);
+                
+            var length = path.node().getTotalLength();
+
+            d3.select('#' + id)
+                .attr("stroke-dasharray", length + " " + length )
+                .attr("stroke-dashoffset", length)
+                .transition()
+                    .duration(1000)
+                    .ease(d3.easeCubic)
+                    .attr("stroke-dashoffset", 0);
+        }
+
+        function plotDot(svg, dataSet, state, handleMouseOver, handleMouseOut) {
+            state = state.replace(/\s+/g, '');
+            svg.selectAll("i")
+                .data(dataSet)
+                .enter()
+                .append("circle")
+                    .attr("class", "dot " + state)
+                    .attr("cx", function(d, i) { return xScale(d.year) })
+                    .attr("cy", function(d) { return yScale(d.votes / d.eligible_voters) })
+                    .attr("r", radius)
+                    .on("mouseover", handleMouseOver)
+                    .on("mouseout", handleMouseOut);
+        }
+
+        function removeLine(state) {
+            d3.selectAll(".rect").remove();
+            var i = legendSet.findIndex(d => d.state == state);
+            if (i >= 0) {
+                legendSet.splice(i, 1);
+                legendNumber--;
+                renderLegend(legendSet);
+            }
+            state = state.replace(/\s+/g, '');
+            d3.selectAll("." + state).remove();
+        }
+
+        function handleMouseOver(d, i) {
+            d3.select(this).style("fill", "#EE1D23");
+            d3.select(this).style("stroke", "#000000");
+            d3.select(this).attr("r", radius * 2);
+            var tooltip = d3.select("#tooltip");
+            tooltip.style("opacity", 1)
+                .style("left", (d3.event.pageX + 6) + "px")
+                .style("top", (d3.event.pageY + 10) + "px")
+                .html("<p>Name: " + d.state + "</p>\
+                        <p>Year: " + d.year +"</p>\
+                        <p>Votes: " + d.votes + "</p>\
+                        <p>Eligible Voters: " + d.eligible_voters + "</p>\
+                        <p>Percentage: " + parseInt(Math.round((d.votes / d.eligible_voters) * 100)) / 100 +"</p>");
+        }
+
+        function handleMouseOut(d, i) {
+            d3.select(this).style("fill", "#000000");
+            d3.select(this).style("stroke", "#ffffff");
+            d3.select(this).attr("r", radius);
+            var tooltip = d3.select("#tooltip");
+            tooltip.style("opacity", 0)
+            .style("left", "0px")
+                .style("top", "0px")
+        }
+
+        function renderSelectionParams() {
+            dataset = uniqueDataset(data);
+            var selection = d3.select("#selection")
+            
+            selection.selectAll("input")
+                .data(dataset)
+                .enter()
+                .append('label')
+                    .attr('for',function(d,i){ return d.state })
+                    .style('display', 'inline')
+                    .text(function(d) { return d.state; })
+                .append("input")
+                    .attr("type", "checkbox")
+                    .attr("id", function(d,i) { return d.state })
+                    .attr("value", function(d) {return d.alphanumeric_state_code})
+                    .style('float', 'right')
+                    .attr("onClick", "onChecked(this)");
+        }
+
+        function onChecked(checkbox) {
+            d3.select("#tooltip").style("opacity", 0).style("left", "0px").style("top", "0px")
+            if(checkbox.checked) {
+                var svg = d3.select('svg')
+                .append("g")
+                    .attr("transform", "translate(" + (chartMargin.left + 25) + "," + chartMargin.top + ")");
+
+                var color = assigned_colors[checkbox.value];
+                if (!color) {
+                    color = color_palette[checkbox.value % 10]
+                }
+                plot(svg, checkbox.value, color, checkbox.id + 1, checkbox.id + 2, handleMouseOver, handleMouseOut);
+            } else {
+                removeLine(checkbox.id)
+            }
+        }
+
+        function renderLegend(dataset) {
+            dataset = uniqueDataset(dataset);
+            var svg = d3.select('svg');
+            if (dataset.length == 1) {
+                var i = legendSet.findIndex(d => d.state == dataset[0].state)
+                if (i < 0) {
+                    legendNumber++;
+                    legendSet.push(dataset[0]);
+                }
+            }
+
+            var legend = svg.append("g")
+            .attr("class", "legend")
+            .attr("height", 100)
+            .attr("width", 100)
+            .attr("transform", "translate(" + legendX+ ", 50)");
+
+            legend.selectAll('rect')
+                .data(dataset)
+                .enter()
+                .append("rect")
+                .attr("x", chartWidth - 65)
+                .attr("y", function(d, i){ 
+                    if (dataset.length > 1) {
+                        return i * 20;
+                    }
+                    return (legendNumber -1 ) *  20;})
+                .attr("width", 10)
+                .attr("height", 10)
+                .attr("class", "rect")
+                .style("fill", function(d) { 
+                    var color = assigned_colors[d.alphanumeric_state_code];
+                    if (!color) {
+                        color = color_palette[d.alphanumeric_state_code % 10];
+                    }
+                    return color;
+                });
+
+            legend.selectAll("text")
+            .data(dataset)
+            .enter()
+            .append("text")
+            .attr("x", chartWidth - 50)
+            .attr("y", function(d, i){ 
+                if (dataset.length > 1) {
+                    return i * 20 + 9;
+                }
+                return (legendNumber -1) *  20 + 9;
+            })
+            .attr("class", "rect")
+            .text(function(d) {
+            var text = d.state;
+                return text;
+            });
+        }
+
+        function uniqueDataset(dataset) {
+            return Array.from(new Set(dataset.map(s => s.alphanumeric_state_code))).map(
+                id => {
+                    return {
+                        alphanumeric_state_code: id,
+                        state: dataset.find(d => d.alphanumeric_state_code == id).state
+                    }
+                }
+            )
+        }
+    </script>
+</html>
