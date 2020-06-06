@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script src="https://d3js.org/d3.v5.min.js"></script>
+        <!-- <script src='./d3/d3.js'></script> -->
+        <style>
+            body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+        .meter { 
+            height: 6px;
+            position: relative;
+            background: #c4c4ff;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .meter span {
+            display: block;
+            height: 100%;
+        }
+
+        .progress {
+            background-color: #0000ff;
+            animation: progressBar 2s ease-in-out;
+            animation-fill-mode:both; 
+        }
+
+        @keyframes progressBar {
+            0% { width: 0; }
+            99% { opacity: 1; }
+            100% { width: 100%; opacity: 0; }
+        }
+
+        .background {
+            fill: #eee;
+        }
+
+        line {
+            stroke: #fff;
+        }
+
+        text.active {
+            fill: #0000ff;
+        }
+
+        div.tooltip {
+            position: absolute;
+            text-align: center;
+            padding: .5rem;
+            background: #FFFFFF;
+            color: #313639;
+            border: 1px solid #313639;
+            border-radius: 8px;
+            pointer-events: none;
+            font-size: 1.3rem;
+        }
+
+        </style>
+    </head>
+    <body  onload='init()' style="background-color: #F9F9F9">
+        <div class="meter">
+            <span style="width:100%;"><span class="progress"></span></span>
+        </div>
+    </body>
+    <script>
+        async function init() {
+
+            var margin = 160,
+            width = 820,
+            height = 820;
+            
+            var svg = d3.select("body").append("svg")
+            .attr("width", width + margin )
+            .attr("height", height + margin)
+            .append("g")
+                .attr("transform", "translate(" + margin + "," + margin + ")");
+            
+            var data = await d3.json("cuisine_sim_matrix.json");
+            var matrix = [],
+            cuisines = data
+            cuisines.forEach((cuisine, i) => {
+                cuisine.index = i;
+                cuisine.count = 0;
+                matrix[i] = d3.range(cuisines.length).map(function(j) { return {x: j, y: i, z: 0}; });
+            });
+            cuisines.forEach((c, i) => {
+                c.sim_list.forEach((sim, j) => {
+                    matrix[i][j].z = sim
+                })
+            });
+
+            
+            // var x = d3.scaleOrdinal.rangeBands([0, width]),
+            var x = d3.scaleBand().domain(cuisines.map(x => x.name)).range([0, width]),
+            // z = d3.scaleLinear().domain([0, 4]).clamp(true),
+            c = d3.scaleOrdinal(d3.schemeCategory10).domain(d3.range(10));
+
+            // Precompute the orders.
+            var orders = {
+                name: d3.range(cuisines.length).sort(function(a, b) { return d3.ascending(cuisines[a].name, cuisines[b].name); }),
+                count: d3.range(cuisines.length).sort(function(a, b) { return cuisines[b].count - cuisines[a].count; }),
+                cluster: d3.range(cuisines.length).sort(function(a, b) { return cuisines[b].cluster - cuisines[a].cluster; })
+            };
+
+            // The default sort order.
+            x.domain(orders.name);
+
+            var div = d3.select("body").append("div")
+                .attr("class", "tooltip")
+                .style("opacity", 0);
+
+
+            svg.append("rect")
+                .attr("class", "background")
+                .attr("width", width)
+                .attr("height", height);
+
+            var row = svg.selectAll(".row")
+                .data(matrix)
+                .enter().append("g")
+                .attr("class", "row")
+                .attr("transform", function(d, i) { return "translate(0," + x.bandwidth() * i + ")"; })
+                .each(row);
+
+            row.append("line")
+                .attr("x2", width)
+                // .attr("y1", (d, i) => i * x.bandwidth())
+                // .attr("y2", (d, i) => i * x.bandwidth())
+
+            row.append("text")
+                .attr("x", -6)
+                .attr("y", d =>  x.bandwidth()/2)
+                .attr("dy", ".32em")
+                .attr("text-anchor", "end")
+                .text((d, i) => { return cuisines[i].name; });
+
+            var column = svg.selectAll(".column")
+                .data(matrix)
+                .enter().append("g")
+                .attr("class", "column")
+                .attr("transform", (d, i) => { return "translate(" + x.bandwidth() * i + ")rotate(-90)"; });
+
+            column.append("line")
+                .attr("x1", -width);
+
+            column.append("text")
+                .attr("x", 6)
+                .attr("y", d => x.bandwidth()/2)
+                .attr("dy", ".32em")
+                .attr("text-anchor", "start")
+                .text((d, i) => { console.log(x.bandwidth()); return cuisines[i].name; });
+
+            function row(row, j) {
+                // console.log(j)
+                var cell = d3.select(this).selectAll(".cell")
+                    .data(row.filter(function(d) { console.log(d.z); return d.z; }))
+                .enter().append("rect")
+                    .attr("class", "cell")
+                    .attr("x", (d) => { console.log(j); return d.x * x.bandwidth() })
+                    // .attr("y", (d, i) => { console.log(j);  return j * x.bandwidth() })
+                    .attr("width", (d, i) => x.bandwidth())
+                    .attr("height", (d, i) => x.bandwidth())
+                    .style("fill-opacity", function(d) { return d.z; })
+                    .style("fill", function(d) { return (cuisines[d.x].cluster == cuisines[d.y].cluster) && cuisines[d.y].cluster != -1 ? c(cuisines[d.x].cluster) : null; })
+                    .on("mouseover", mouseover)
+                    .on("mouseout", mouseout);
+            }
+                    // .style('fill', '#0000ff')
+
+            function mouseover(p) {
+                console.log(p)
+                d3.selectAll(".row text").classed("active", (d, i) => { return i == p.y; });
+                d3.selectAll(".column text").classed("active", (d, i) => { return i == p.x; });
+                d3.select(this).transition()
+                    .style('fill-opacity', '1')
+                    .duration('500');
+                
+                if (cuisines[p.x].cluster == cuisines[p.y].cluster) {
+                    d3.select(".tooltip")
+                    .style("left", (d3.event.pageX + 6) + "px")
+                    .style("top", (d3.event.pageY + 10) + "px")
+                    .html( "<p>" + parseInt(Math.round(p.z * 100)) + "% Similar</p>\
+                            <p> Cluster: " + cuisines[p.x].cluster + "</p>")
+                    .transition()
+                        .style("opacity", 1)
+                        .duration('500');
+                } else {
+                    d3.select(".tooltip")
+                    .style("left", (d3.event.pageX + 6) + "px")
+                    .style("top", (d3.event.pageY + 10) + "px")
+                    .html( "<p>" + parseInt(Math.round(p.z * 100)) + "% Similar</p>")
+                    .transition()
+                        .style("opacity", 1)
+                        .duration('500');
+                }
+
+            }
+
+            function mouseout(d) {
+                d3.selectAll("text").classed("active", false);
+                d3.select(this).transition()
+                    .style('fill-opacity', (d) => d.z)
+                    .duration('250');
+                d3.select(".tooltip")
+                    .transition()
+                        .style("opacity", 0)
+                        .duration('250')
+                        .on("end", () => {
+                            d3.select(this).style("left", "0px")
+                            .style("top", "0px") 
+                        });
+                
+            }
+
+            // d3.select("#order").on("change", function() {
+            //     clearTimeout(timeout);
+            //     order(this.value);
+            // });
+
+            function order(value) {
+                x.domain(orders[value]);
+
+                var t = svg.transition().duration(2500);
+
+                t.selectAll(".row")
+                    .delay(function(d, i) { console.log(x(i)); return x(i) * 4; })
+                    .attr("transform", function(d, i) { return "translate(0," + x(i) + ")"; })
+                .selectAll(".cell")
+                    .delay(function(d) { return x(d.x) * 4; })
+                    .attr("x", function(d) { return x(d.x); });
+
+                t.selectAll(".column")
+                    .delay(function(d, i) { return x(i) * 4; })
+                    .attr("transform", function(d, i) { return "translate(" + x(i) + ")rotate(-90)"; });
+            }
+
+            var timeout = setTimeout(function() {
+                order("cluster");
+                // d3.select("#order").property("selectedIndex", 2).node().focus();
+            }, 2000);
+        }
+
+    </script>
+</html>
