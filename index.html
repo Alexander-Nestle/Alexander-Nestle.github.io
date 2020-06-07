@@ -60,7 +60,7 @@
 
         </style>
     </head>
-    <body  onload='init()' style="background-color: #F9F9F9">
+    <body  onload='init()'>
         <div class="meter">
             <span style="width:100%;"><span class="progress"></span></span>
         </div>
@@ -178,16 +178,16 @@
                     .style('fill-opacity', '1')
                     .duration('500');
                 
-                if (cuisines[p.x].cluster == cuisines[p.y].cluster) {
-                    d3.select(".tooltip")
-                    .style("left", (d3.event.pageX + 6) + "px")
-                    .style("top", (d3.event.pageY + 10) + "px")
-                    .html( "<p>" + parseInt(Math.round(p.z * 100)) + "% Similar</p>\
-                            <p> Cluster: " + cuisines[p.x].cluster + "</p>")
-                    .transition()
-                        .style("opacity", 1)
-                        .duration('500');
-                } else {
+//                 if (cuisines[p.x].cluster == cuisines[p.y].cluster) {
+//                     d3.select(".tooltip")
+//                     .style("left", (d3.event.pageX + 6) + "px")
+//                     .style("top", (d3.event.pageY + 10) + "px")
+//                     .html( "<p>" + parseInt(Math.round(p.z * 100)) + "% Similar</p>\
+//                             <p> Cluster: " + cuisines[p.x].cluster + "</p>")
+//                     .transition()
+//                         .style("opacity", 1)
+//                         .duration('500');
+//                 } else {
                     d3.select(".tooltip")
                     .style("left", (d3.event.pageX + 6) + "px")
                     .style("top", (d3.event.pageY + 10) + "px")
@@ -195,7 +195,7 @@
                     .transition()
                         .style("opacity", 1)
                         .duration('500');
-                }
+//                 }
 
             }
 
