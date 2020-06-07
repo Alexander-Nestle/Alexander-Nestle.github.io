@@ -68,7 +68,7 @@
     <script>
         async function init() {
 
-            var margin = 160,
+            var margin = 250,
             width = 820,
             height = 820;
             
@@ -164,11 +164,11 @@
                     .attr("width", (d, i) => x.bandwidth())
                     .attr("height", (d, i) => x.bandwidth())
                     .style("fill-opacity", function(d) { return d.z; })
-                    .style("fill", function(d) { return (cuisines[d.x].cluster == cuisines[d.y].cluster) && cuisines[d.y].cluster != -1 ? c(cuisines[d.x].cluster) : null; })
+                    .style('fill', '#0000ff')
                     .on("mouseover", mouseover)
                     .on("mouseout", mouseout);
             }
-                    // .style('fill', '#0000ff')
+//             .style("fill", function(d) { return (cuisines[d.x].cluster == cuisines[d.y].cluster) && cuisines[d.y].cluster != -1 ? c(cuisines[d.x].cluster) : null; })
 
             function mouseover(p) {
                 console.log(p)
@@ -237,10 +237,10 @@
                     .attr("transform", function(d, i) { return "translate(" + x(i) + ")rotate(-90)"; });
             }
 
-            var timeout = setTimeout(function() {
-                order("cluster");
-                // d3.select("#order").property("selectedIndex", 2).node().focus();
-            }, 2000);
+//             var timeout = setTimeout(function() {
+//                 order("cluster");
+//                 // d3.select("#order").property("selectedIndex", 2).node().focus();
+//             }, 2000);
         }
 
     </script>
