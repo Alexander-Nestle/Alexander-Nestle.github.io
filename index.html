@@ -64,6 +64,7 @@
         <div class="meter">
             <span style="width:100%;"><span class="progress"></span></span>
         </div>
+        <h1 style="padding-left: 250px;">Doc2Vec Simularity Clusters using K-Means++</h1>
     </body>
     <script>
         async function init() {
@@ -180,7 +181,7 @@
                     .style("left", (d3.event.pageX + 6) + "px")
                     .style("top", (d3.event.pageY + 10) + "px")
                     .html( "<p>" + parseInt(Math.round(p.z * 100)) + "% Similar</p>\
-                            <p> Cluster: " + cuisines[p.x].cluster + "</p>")
+                            <p> Cluster: " + (parseInt(cuisines[p.x].cluster) + 1) + "</p>")
                     .transition()
                         .style("opacity", 1)
                         .duration('500');
