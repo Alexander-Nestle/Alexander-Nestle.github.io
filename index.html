@@ -151,43 +151,40 @@
                 .attr("y", d => x.bandwidth()/2)
                 .attr("dy", ".32em")
                 .attr("text-anchor", "start")
-                .text((d, i) => { console.log(x.bandwidth()); return cuisines[i].name; });
+                .text((d, i) => { return cuisines[i].name; });
 
             function row(row, j) {
-                // console.log(j)
                 var cell = d3.select(this).selectAll(".cell")
-                    .data(row.filter(function(d) { console.log(d.z); return d.z; }))
+                    .data(row.filter(function(d) {  return d.z; }))
                 .enter().append("rect")
                     .attr("class", "cell")
-                    .attr("x", (d) => { console.log(j); return d.x * x.bandwidth() })
-                    // .attr("y", (d, i) => { console.log(j);  return j * x.bandwidth() })
+                    .attr("x", (d) => {  return d.x * x.bandwidth() })
                     .attr("width", (d, i) => x.bandwidth())
                     .attr("height", (d, i) => x.bandwidth())
                     .style("fill-opacity", function(d) { return d.z; })
-                    .style('fill', '#0000ff')
+                    .style("fill", function(d) { return (cuisines[d.x].cluster == cuisines[d.y].cluster) && cuisines[d.y].cluster != -1 ? c(cuisines[d.x].cluster) : null; })
                     .on("mouseover", mouseover)
                     .on("mouseout", mouseout);
             }
-//             .style("fill", function(d) { return (cuisines[d.x].cluster == cuisines[d.y].cluster) && cuisines[d.y].cluster != -1 ? c(cuisines[d.x].cluster) : null; })
+                    // .style('fill', '#0000ff')
 
             function mouseover(p) {
-                console.log(p)
                 d3.selectAll(".row text").classed("active", (d, i) => { return i == p.y; });
                 d3.selectAll(".column text").classed("active", (d, i) => { return i == p.x; });
                 d3.select(this).transition()
                     .style('fill-opacity', '1')
                     .duration('500');
                 
-//                 if (cuisines[p.x].cluster == cuisines[p.y].cluster) {
-//                     d3.select(".tooltip")
-//                     .style("left", (d3.event.pageX + 6) + "px")
-//                     .style("top", (d3.event.pageY + 10) + "px")
-//                     .html( "<p>" + parseInt(Math.round(p.z * 100)) + "% Similar</p>\
-//                             <p> Cluster: " + cuisines[p.x].cluster + "</p>")
-//                     .transition()
-//                         .style("opacity", 1)
-//                         .duration('500');
-//                 } else {
+                if (cuisines[p.x].cluster == cuisines[p.y].cluster) {
+                    d3.select(".tooltip")
+                    .style("left", (d3.event.pageX + 6) + "px")
+                    .style("top", (d3.event.pageY + 10) + "px")
+                    .html( "<p>" + parseInt(Math.round(p.z * 100)) + "% Similar</p>\
+                            <p> Cluster: " + cuisines[p.x].cluster + "</p>")
+                    .transition()
+                        .style("opacity", 1)
+                        .duration('500');
+                } else {
                     d3.select(".tooltip")
                     .style("left", (d3.event.pageX + 6) + "px")
                     .style("top", (d3.event.pageY + 10) + "px")
@@ -195,7 +192,7 @@
                     .transition()
                         .style("opacity", 1)
                         .duration('500');
-//                 }
+                }
 
             }
 
@@ -226,7 +223,7 @@
                 var t = svg.transition().duration(2500);
 
                 t.selectAll(".row")
-                    .delay(function(d, i) { console.log(x(i)); return x(i) * 4; })
+                    .delay(function(d, i) { return x(i) * 4; })
                     .attr("transform", function(d, i) { return "translate(0," + x(i) + ")"; })
                 .selectAll(".cell")
                     .delay(function(d) { return x(d.x) * 4; })
@@ -237,10 +234,10 @@
                     .attr("transform", function(d, i) { return "translate(" + x(i) + ")rotate(-90)"; });
             }
 
-//             var timeout = setTimeout(function() {
-//                 order("cluster");
-//                 // d3.select("#order").property("selectedIndex", 2).node().focus();
-//             }, 2000);
+            var timeout = setTimeout(function() {
+                order("cluster");
+                // d3.select("#order").property("selectedIndex", 2).node().focus();
+            }, 2000);
         }
 
     </script>
